@@ -15,6 +15,11 @@ MODE_CHAR = 'CHAR'
 MODE_ESC = 'ESC'
 MODE_BRACKET = 'BRACKET'
 
+BELL = b'\x07'
+ANSI_ESC = b'\x1b'
+
+TAB_WIDTH = 8
+
 def eprint(*args, **kwargs):
     print(*args, **kwargs, end='\r\n', file=sys.stderr)
 
@@ -28,7 +33,7 @@ class TermClosed(Exception):
 
 
 class AnsiTerm:
-    def __init__(self, width=40, height=12):
+    def __init__(self, width=80, height=24):
         self.termf = None
         self.readpipe = None
         self.writepipe = None
@@ -65,14 +70,20 @@ class AnsiTerm:
     def send_input(self, buf):
         try:
             self.writepipe.write(buf)
+            eprint('in: ', buf)
         except Exception:
             raise TermClosed()
 
 
-    def get_term(self):
+    def get_state(self):
         if self.done:
             raise TermClosed()
-        return copy.deepcopy(self.rows), (self.currow, self.curcol, self.mode)
+        info = {
+            'currow': self.currow,
+            'curcol': self.curcol,
+            'mode': self.mode,
+        }
+        return copy.deepcopy(self.rows), info
 
 
     def close(self):
@@ -129,12 +140,22 @@ class AnsiTerm:
 
 
     def handle_char(self, b):
-        if b == b'\x27':
+        eprint('out:', b)
+        if b == BELL:
+            pass
+        elif b == ANSI_ESC:
             self.mode = MODE_ESC
         elif b == b'\n':
-            self.currow += 1
-            if self.currow >= self.height:
+            if self.currow < self.height - 1:
+                self.currow += 1
+            else:
                 self.shift_rows()
+        elif b == b'\t':
+            self.write_cell(b' ')
+            self.curcol += 1
+            while col % TAB_WIDTH != 0:
+                self.write_cell(b' ')
+                self.curcol += 1
         elif b == b'\r':
             self.curcol = 0
         elif b == b'\b':
@@ -147,7 +168,7 @@ class AnsiTerm:
 
 
     def handle_esc(self, b):
-        if b == '[':
+        if b == b'[':
             self.mode = MODE_BRACKET
         else:
             self.write_cell(b)
@@ -155,7 +176,7 @@ class AnsiTerm:
 
 
     def handle_bracket(self, b):
-        if b != ';' or b >= b'0' and b <= b'9':
+        if (b < b'0' or b > b'9') and b != b';' and b != b'=':
             self.mode = MODE_CHAR
 
 
@@ -194,11 +215,14 @@ def main():
                     b = stdinf.read(1)
                     ansiterm.send_input(b)
 
-
-            outprint('TOP'.ljust(ansiterm.width, '-'))
-            for r in ansiterm.get_rows():
-                outprint('|' + ''.join(r) + '|')
-            outprint('BOTTOM'.ljust(ansiterm.width, '-'))
+            outprint('\n\n\n')
+            rows, info = ansiterm.get_state()
+            outprint('TOP '.ljust(ansiterm.width + 4, '-'))
+            for i, r in enumerate(rows):
+                line = ''.join(r)
+                outprint(f'{i:2d} |{line}|')
+            outprint('BOT '.ljust(ansiterm.width + 4, '-'))
+            outprint(str(info) + '\n')
     except TermClosed:
         raise
     finally:
