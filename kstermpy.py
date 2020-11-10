@@ -7,8 +7,6 @@ import copy
 import termios
 import tty
 import collections
-
-import pty
 import time
 
 TERM = 'kstermpy'
@@ -61,15 +59,23 @@ def utf8read(f):
         return None
 
 
-TermState = collections.namedtuple('TermState', ['currow', 'curcol', 'curstate'])
+TermState = collections.namedtuple('TermState', [
+    'updates',
+    'currow',
+    'curcol',
+    'curstate',
+])
 
 
 class Term:
-    def __init__(self, width=80, height=24):
+    def __init__(self, ready_callback, width=80, height=24):
         self.termf = None
         self.readpipe = None
         self.writepipe = None
         self.thread = None
+
+        self.ready_callback = ready_callback
+        self.updates = 0
 
         self.width = width
         self.height = height
@@ -114,6 +120,7 @@ class Term:
         if self.done:
             raise TermClosed()
         state = TermState(
+            self.updates,
             clamp_index(self.currow, self.height),
             clamp_index(self.curcol, self.width),
             self.mode,
@@ -136,8 +143,14 @@ class Term:
         poller.register(termfd, POLL_FLAGS_READ)
         poller.register(readpipefd, POLL_FLAGS_READ)
         try:
+            first_term_char_time = None
             while not self.done:
-                polled = poller.poll()
+                saw_term_char = False
+                if first_term_char_time == None:
+                    polled = poller.poll()
+                else:
+                    poll_duration = first_term_char_time + 0.025 - time.monotonic()
+                    polled = poller.poll(max(0, poll_duration))
                 for fd, event in polled:
                     if event == select.POLLERR:
                         raise PollError('POLLERR event')
@@ -145,9 +158,17 @@ class Term:
                         c = utf8read(self.termf)
                         if c:
                             self.handle(c)
+                            if first_term_char_time == None:
+                                first_term_char_time = time.monotonic()
+                            saw_term_char = True
                     elif fd == readpipefd:
                         b = self.readpipe.read(1)
                         self.termf.write(b)
+                if not saw_term_char and first_term_char_time != None:
+                    if first_term_char_time + 0.025 < time.monotonic():
+                        first_term_char_time = None
+                        self.ready_callback()
+                        self.updates += 1
         finally:
             self.done = True
             self.readpipe.close()
