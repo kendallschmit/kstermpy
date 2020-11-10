@@ -3,7 +3,7 @@ import tty
 import os
 import select
 
-import ktermpy
+import kstermpy
 
 ENCODING = 'utf-8'
 
@@ -16,11 +16,11 @@ def main():
     stdinfd = sys.stdin.fileno()
 
     try:
-        kterm = None
+        ksterm = None
         masterf = None
 
-        kterm = ktermpy.Term()
-        kterm.open()
+        ksterm = kstermpy.Term()
+        ksterm.open()
 
         masterfd, slavefd = os.openpty()
         tty.setraw(masterfd)
@@ -43,23 +43,23 @@ def main():
                     return
                 if fd == masterfd:
                     b = masterf.read(1)
-                    kterm.send_input(b)
+                    ksterm.send_input(b)
 
             printline()
-            rows, state = kterm.get_state()
+            rows, state = ksterm.get_state()
             rows[state.currow][state.curcol] = '_'
-            printline('TOP '.ljust(kterm.width + 4, '-'))
+            printline('TOP '.ljust(ksterm.width + 4, '-'))
             for i, r in enumerate(rows):
                 line = ''.join(r)
                 printline(f'{i + 1:2d} |{line}|')
-            printline('BOT '.ljust(kterm.width + 4, '-'))
+            printline('BOT '.ljust(ksterm.width + 4, '-'))
             printline(str(state))
-    except ktermpy.TermClosed:
+    except kstermpy.TermClosed:
         pass
     finally:
         if masterf:
             masterf.close()
-        if kterm:
+        if ksterm:
             kterm.close()
 
 
