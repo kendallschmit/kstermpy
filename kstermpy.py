@@ -137,7 +137,7 @@ class Term:
         poller.register(readpipefd, POLL_FLAGS_READ)
         try:
             while not self.done:
-                polled = poller.poll(1000)
+                polled = poller.poll()
                 for fd, event in polled:
                     if event == select.POLLERR:
                         raise PollError('POLLERR event')
@@ -253,7 +253,8 @@ class Term:
             n = (max(1, int(args[0])))
             self.move_currow(-n)
         elif cmd == 'B':
-            n = (max(1, int(args[0]))) self.move_currow(n)
+            n = (max(1, int(args[0])))
+            self.move_currow(n)
         elif cmd == 'C':
             n = (max(1, int(args[0])))
             self.move_curcol(n)
