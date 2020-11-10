@@ -6,7 +6,7 @@ import subprocess
 import copy
 import termios
 import tty
-import re
+import collections
 
 import pty
 import time
@@ -61,6 +61,9 @@ def utf8read(f):
         return None
 
 
+TermState = collections.namedtuple('TermState', ['currow', 'curcol', 'curstate'])
+
+
 class Term:
     def __init__(self, width=80, height=24):
         self.termf = None
@@ -110,12 +113,12 @@ class Term:
     def get_state(self):
         if self.done:
             raise TermClosed()
-        info = {
-            'currow': clamp_index(self.currow, self.height),
-            'curcol': clamp_index(self.curcol, self.width),
-            'mode': self.mode,
-        }
-        return copy.deepcopy(self.rows), info
+        state = TermState(
+            clamp_index(self.currow, self.height),
+            clamp_index(self.curcol, self.width),
+            self.mode,
+        )
+        return copy.deepcopy(self.rows), state
 
 
     def close(self):

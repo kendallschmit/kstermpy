@@ -46,17 +46,14 @@ def main():
                     kterm.send_input(b)
 
             printline()
-            rows, info = kterm.get_state()
-            try:
-                rows[info['currow']][info['curcol']] = '_'
-            except:
-                pass
+            rows, state = kterm.get_state()
+            rows[state.currow][state.curcol] = '_'
             printline('TOP '.ljust(kterm.width + 4, '-'))
             for i, r in enumerate(rows):
                 line = ''.join(r)
                 printline(f'{i + 1:2d} |{line}|')
             printline('BOT '.ljust(kterm.width + 4, '-'))
-            printline(str(info))
+            printline(str(state))
     except ktermpy.TermClosed:
         pass
     finally:
