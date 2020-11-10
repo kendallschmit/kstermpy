@@ -248,14 +248,12 @@ class Term:
 
 
     def do_escbuf(self, cmd):
-        eprint('ESC[', self.escbuf, cmd, end='\t')
         args = self.escbuf.split(';')
         if cmd == 'A':
             n = (max(1, int(args[0])))
             self.move_currow(-n)
         elif cmd == 'B':
-            n = (max(1, int(args[0])))
-            self.move_currow(n)
+            n = (max(1, int(args[0]))) self.move_currow(n)
         elif cmd == 'C':
             n = (max(1, int(args[0])))
             self.move_curcol(n)
@@ -276,7 +274,7 @@ class Term:
         elif cmd == 'J':
             self.clear()
         else:
-            eprint('*** WHOOPS! UNEXPECTED ESCAPE ***')
-
+            eprint('*** WHOOPS! UNEXPECTED ESCAPE: ', end='')
+        eprint('ESC[', self.escbuf, cmd, end='\t')
 
         self.escbuf = ''
