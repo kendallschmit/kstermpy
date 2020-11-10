@@ -1,0 +1,2 @@
+ktermpy,
+    cup=\E[%i%p1%d;%p2%dH,
