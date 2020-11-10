@@ -53,8 +53,12 @@ def utf8read(f):
             remaining += 1
         #eprint(f'UTF-8: size {remaining + 1}')
         buf += f.read(remaining)
-    c = buf.decode(ENCODING)
-    return c
+        # We really should do a proper check for broken UTF-8 characters here.
+        # They can occur in the wild when a program is killed during a print.
+    try:
+        return buf.decode(ENCODING)
+    except Exception:
+        return None
 
 
 class Term:
@@ -136,7 +140,8 @@ class Term:
                         raise PollError('POLLERR event')
                     if fd == termfd:
                         c = utf8read(self.termf)
-                        self.handle(c)
+                        if c:
+                            self.handle(c)
                     elif fd == readpipefd:
                         b = self.readpipe.read(1)
                         self.termf.write(b)
@@ -267,6 +272,8 @@ class Term:
                 self.rows[self.currow][col] = ' '
         elif cmd == 'J':
             self.clear()
+        else:
+            eprint('*** WHOOPS! UNEXPECTED ESCAPE ***')
 
 
         self.escbuf = ''
