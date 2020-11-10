@@ -72,11 +72,16 @@ TermState = collections.namedtuple('TermState', [
 
 
 class Term:
-    def __init__(self, ready_callback, width=80, height=24):
+    def __init__(self, ready_callback, width=80, height=24, silent=False):
         self.termf = None
         self.readpipe = None
         self.writepipe = None
         self.thread = None
+
+        if silent:
+            self.printfn = noprint
+        else:
+            self.printfn = eprint
 
         self.ready_callback = ready_callback
         self.updates = 0
@@ -174,7 +179,7 @@ class Term:
                         self.ready_callback()
                         self.updates += 1
         except OSError as e:
-            eprint('\nTerm is done:', e)
+            self.printfn('\nTerm is done:', e)
         finally:
             self.done = True
             self.readpipe.close()
@@ -214,7 +219,7 @@ class Term:
 
 
     def write_cell(self, cell):
-        eprint(f'\'{cell}\'', end=' ')
+        self.printfn(f'\'{cell}\'', end=' ')
         if self.curcol >= self.width:
             self.wrap()
         self.rows[self.currow][self.curcol] = cell
@@ -302,7 +307,7 @@ class Term:
         elif cmd == 'J':
             self.clear()
         else:
-            eprint('*** WHOOPS! UNEXPECTED ESCAPE: ', end='')
-        eprint('ESC[', self.escbuf, cmd, end='\t')
+            self.printfn('*** WHOOPS! UNEXPECTED ESCAPE: ', end='')
+        self.printfn('ESC[', self.escbuf, cmd, end='\t')
 
         self.escbuf = ''

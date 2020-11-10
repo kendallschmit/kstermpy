@@ -7,7 +7,6 @@ import time
 
 import kstermpy
 
-ENCODING = 'utf-8'
 
 def eprint(*args, **kwargs):
     print(*args, **kwargs, file=sys.stderr)
@@ -44,6 +43,8 @@ def input_loop(ksterm):
 
 
 def main():
+    silent = '--silent' in sys.argv
+
     def ksterm_ready():
         print()
         rows, state = ksterm.get_state()
@@ -58,7 +59,7 @@ def main():
 
     ksterm = None
     try:
-        ksterm = kstermpy.Term(ksterm_ready)
+        ksterm = kstermpy.Term(ksterm_ready, silent=silent)
         ksterm.open()
 
         input_loop(ksterm)
