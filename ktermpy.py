@@ -169,10 +169,8 @@ class Term:
 
     def tab(self):
         self.write_cell(' ')
-        self.curcol += 1
         while self.curcol % TAB_WIDTH != 0:
             self.write_cell(' ')
-            self.curcol += 1
 
 
     def wrap(self):
@@ -181,6 +179,7 @@ class Term:
 
 
     def write_cell(self, cell):
+        eprint(f'\'{cell}\'', end=' ')
         if self.curcol >= self.width:
             self.wrap()
         self.rows[self.currow][self.curcol] = cell
@@ -244,16 +243,16 @@ class Term:
         eprint('ESC[', self.escbuf, cmd, end='\t')
         args = self.escbuf.split(';')
         if cmd == 'A':
-            n = (min(1, int(args[0])))
+            n = (max(1, int(args[0])))
             self.move_currow(-n)
         elif cmd == 'B':
-            n = (min(1, int(args[0])))
+            n = (max(1, int(args[0])))
             self.move_currow(n)
         elif cmd == 'C':
-            n = (min(1, int(args[0])))
+            n = (max(1, int(args[0])))
             self.move_curcol(n)
         elif cmd == 'D':
-            n = (min(1, int(args[0])))
+            n = (max(1, int(args[0])))
             self.move_curcol(-n)
         elif cmd == 'H' or cmd == 'f':
             try:
@@ -265,8 +264,7 @@ class Term:
                 self.curcol = 0
         elif cmd == 'K':
             for col in range(self.curcol, self.width):
-                if self.height > self.currow:
-                    self.rows[self.currow][col] = ' '
+                self.rows[self.currow][col] = ' '
         elif cmd == 'J':
             self.clear()
 
