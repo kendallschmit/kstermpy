@@ -27,6 +27,10 @@ def eprint(*args, **kwargs):
     sys.stderr.flush()
 
 
+def noprint(*args, **kwargs):
+    pass
+
+
 class PollError(Exception):
     pass
 
@@ -169,6 +173,8 @@ class Term:
                         first_term_char_time = None
                         self.ready_callback()
                         self.updates += 1
+        except OSError as e:
+            eprint('\nTerm is done:', e)
         finally:
             self.done = True
             self.readpipe.close()

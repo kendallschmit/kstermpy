@@ -19,8 +19,12 @@ def input_loop(ksterm):
     try:
         stdinfd = sys.stdin.fileno()
         stdinattr = termios.tcgetattr(stdinfd)
-        tty.setraw(stdinfd)
+
         tty.setcbreak(stdinfd)
+        tty.setraw(stdinfd)
+        attr = termios.tcgetattr(stdinfd)
+        attr[1] |= termios.OPOST
+        termios.tcsetattr(stdinfd, termios.TCSANOW, attr)
 
         stdinf = os.fdopen(stdinfd, 'rb', 0)
 
@@ -40,21 +44,16 @@ def input_loop(ksterm):
 
 
 def main():
-    def printline(line=''):
-        sys.stdout.buffer.write(line.encode(ENCODING) + b'\r\n')
-
-
     def ksterm_ready():
-        global updates
-        printline()
+        print()
         rows, state = ksterm.get_state()
         rows[state.currow][state.curcol] = '_'
-        printline('TOP '.ljust(ksterm.width + 4, '-'))
+        print('TOP '.ljust(ksterm.width + 4, '-'))
         for i, r in enumerate(rows):
             line = ''.join(r)
-            printline(f'{i + 1:2d} |{line}|')
-        printline('BOT '.ljust(ksterm.width + 4, '-'))
-        printline(str(state))
+            print(f'{i + 1:2d} |{line}|')
+        print('BOT '.ljust(ksterm.width + 4, '-'))
+        print(str(state))
         sys.stdout.buffer.flush()
 
     ksterm = None
